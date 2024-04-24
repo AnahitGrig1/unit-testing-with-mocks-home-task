@@ -33,10 +33,13 @@ describe('UserDataHandler', () => {
     expect(emails).to.equal('test1@gmail.com;test2@gmail.com')
   })
 
-  it('should return number of users', () => {
-    userDataHandler.users = [{ id: 1, email: 'test1@gmail.com' }, { id: 2, email: 'test2@gmail.com' }]
+  it('should return number of users', async () => {
+    const data = [{ id: 1, email: 'test1@gmail.com' }, { id: 2, email: 'test2@gmail.com' }]
+    sandbox.stub(axios, 'get').returns(Promise.resolve({ data }))
 
-    const count = userDataHandler.loadUsers()
+    await userDataHandler.loadUsers()
+    const count = userDataHandler.getNumberOfUsers()
+
     expect(count).to.equal(2)
   })
 
@@ -71,11 +74,9 @@ describe('UserDataHandler', () => {
 
   it('should handle no search parameters while finding users', () => {
     userDataHandler.users = [{ name: 'John', age: 30 }, { name: 'Tom', age: 35 }]
-    try {
+    expect(() => {
       userDataHandler.findUsers('')
-    } catch (err) {
-      expect(err.message).to.throw('No search parameters provided!')
-    }
+    }).to.throw('No search parameters provided!')
   })
 
   it('should handle no users loaded while finding users', () => {
