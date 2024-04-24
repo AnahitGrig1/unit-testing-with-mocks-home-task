@@ -14,9 +14,7 @@ class UserDataHandler {
 
   getUserEmailsList () {
     if (this.users.length === 0) throw new Error('No users loaded!')
-    const arrayOfEmails = this.users.map(user => user.email)
-    const listOfUSerEmails = arrayOfEmails.join(';')
-    return listOfUSerEmails
+    return this.users.map(user => user.email).join(';')
   }
 
   getNumberOfUsers () {
@@ -24,14 +22,7 @@ class UserDataHandler {
   }
 
   isMatchingAllSearchParams (user, searchParamsObject) {
-    let isMatching = true
-    for (const searchParam in searchParamsObject) {
-      if (user[searchParam] !== searchParamsObject[searchParam]) {
-        isMatching = false
-      }
-      if (isMatching === false) break
-    }
-    return isMatching
+    return Object.keys(searchParamsObject).some((searchParam) => user[searchParam] === searchParamsObject[searchParam])
   }
 
   findUsers (searchParamsObject) {

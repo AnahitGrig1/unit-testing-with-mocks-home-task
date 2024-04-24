@@ -36,7 +36,7 @@ describe('UserDataHandler', () => {
   it('should return number of users', () => {
     userDataHandler.users = [{ id: 1, email: 'test1@gmail.com' }, { id: 2, email: 'test2@gmail.com' }]
 
-    const count = userDataHandler.getNumberOfUsers()
+    const count = userDataHandler.loadUsers()
     expect(count).to.equal(2)
   })
 
@@ -74,7 +74,7 @@ describe('UserDataHandler', () => {
     try {
       userDataHandler.findUsers('')
     } catch (err) {
-      expect(err.message).to.equal('No search parameters provided!')
+      expect(err.message).to.throw('No search parameters provided!')
     }
   })
 
@@ -96,11 +96,9 @@ describe('UserDataHandler', () => {
     }
   })
   it("should throw an error if the loading users' data fails", async function () {
-    const stub = sinon.stub(axios, 'get').rejects(new Error('Fake error'))
-
+    const stub = sandbox.stub(axios, 'get').rejects(new Error('Fake error'))
     try {
-      await userDataHandler.loadUsers()
-      expect.fail('The function did not throw an error')
+      expect(await userDataHandler.loadUsers()).to.throw('The function did not throw an error')
     } catch (err) {
       expect(err.message).to.contain('Failed to load users data')
     } finally {
