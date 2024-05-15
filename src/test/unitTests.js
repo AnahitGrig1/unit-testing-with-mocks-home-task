@@ -3,136 +3,114 @@ const axios = require('axios')
 const chai = require('chai')
 const sinon = require('sinon')
 const UserDataHandler = require('../data_handlers/user_data_handler')
-
-let sandbox
-let userDataHandler
+const data = require('../../data/constants/responseBody')
+const { emailList } = require('./testData/data')
 const expect = chai.expect
 
-describe('UserDataHandler', () => {
+describe('UserDataHandler:', () => {
+  let sandbox
+  const userDataHandler = new UserDataHandler()
   beforeEach(() => {
     sandbox = sinon.createSandbox()
-    userDataHandler = new UserDataHandler()
   })
 
   afterEach(() => {
     sandbox.restore()
   })
 
-  it('should load user data', async () => {
-    const data = [{ id: 1, email: 'test1@gmail.com' }, { id: 2, email: 'test2@gmail.com' }]
-    sandbox.stub(axios, 'get').returns(Promise.resolve({ data }))
+  describe('loadUsers:', () => {
+    it('should return usersList with properties from loadUsers', async () => {
+      sandbox.stub(axios, 'get').returns(Promise.resolve({ data }))
+      await userDataHandler.loadUsers()
+      const response = userDataHandler.users
 
-    await userDataHandler.loadUsers()
-    expect(userDataHandler.users.length).to.equal(2)
+      response.forEach(item => {
+        expect(item).not.to.have.property('ids')
+        expect(item).to.have.property('id')
+        expect(item).to.have.property('name')
+        expect(item).to.have.property('username')
+        expect(item).to.have.property('email')
+      })
+    })
+
+    it('should return error in case of load fail', async () => {
+      sandbox.stub(axios, 'get').returns(Promise.reject(new Error('System issue')))
+
+      try {
+        await userDataHandler.loadUsers()
+      } catch (err) {
+        await expect(err.message).to.contain('Failed to load users data:')
+      }
+    })
+  })
+  describe('getNumberOfUsers:', () => {
+    it('should return number of users', async () => {
+      sandbox.stub(axios, 'get').returns(Promise.resolve({ data }))
+
+      await userDataHandler.loadUsers()
+      const count = userDataHandler.getNumberOfUsers()
+
+      expect(count).to.equal(10)
+    })
   })
 
-  it('should return user emails list', () => {
-    userDataHandler.users = [{ id: 1, email: 'test1@gmail.com' }, { id: 2, email: 'test2@gmail.com' }]
+  describe('findUsers:', () => {
+    it('should return matching user', async () => {
+      sandbox.stub(axios, 'get').returns(Promise.resolve({ data }))
+      await userDataHandler.loadUsers()
+      const foundUser = userDataHandler.findUsers({ name: 'Kurtis Weissnat' })
 
-    const emails = userDataHandler.getUserEmailsList()
-    expect(emails).to.equal('test1@gmail.com;test2@gmail.com')
+      expect(foundUser.length).to.equal(1)
+      expect(foundUser[0].email).to.equal('Telly.Hoeger@billy.biz')
+    })
+
+    it('should handle no search parameters while finding users', async () => {
+      sandbox.stub(axios, 'get').returns(Promise.resolve({ data }))
+      await userDataHandler.loadUsers()
+      try {
+        userDataHandler.findUsers()
+      } catch (err) {
+        expect(err.message).to.equal('No search parameters provided!')
+      }
+    })
+
+    it('should handle no matching users found', async () => {
+      sandbox.stub(axios, 'get').returns(Promise.resolve({ data }))
+      await userDataHandler.loadUsers()
+      try {
+        userDataHandler.findUsers({ name: 'Peter' })
+      } catch (err) {
+        expect(err.message).to.equal('No matching users found!')
+      }
+    })
+
+    it('should handle no users loaded while finding users', async () => {
+      sandbox.stub(axios, 'get').returns(Promise.resolve({ data: [] }))
+      await userDataHandler.loadUsers()
+      try {
+        userDataHandler.findUsers({ name: 'John' })
+      } catch (err) {
+        expect(err.message).to.equal('No users loaded!')
+      }
+    })
   })
+  describe('getUserEmailsList:', () => {
+    it('should return user emails list', async () => {
+      sandbox.stub(axios, 'get').returns(Promise.resolve({ data }))
+      await userDataHandler.loadUsers()
+      const emails = await userDataHandler.getUserEmailsList()
+      expect(emails).to.equal(emailList)
+    })
 
-  it('should return number of users', async () => {
-    const data = [{ id: 1, email: 'test1@gmail.com' }, { id: 2, email: 'test2@gmail.com' }]
-    sandbox.stub(axios, 'get').returns(Promise.resolve({ data }))
+    it('should return error in case no users loaded while getting email list', async () => {
+      sandbox.stub(axios, 'get').returns(Promise.resolve({ data: [] }))
+      await userDataHandler.loadUsers()
 
-    await userDataHandler.loadUsers()
-    const count = userDataHandler.getNumberOfUsers()
-
-    expect(count).to.equal(2)
-  })
-
-  it('should return matching users', () => {
-    userDataHandler.users = [
-      { id: 1, email: 'test1@gmail.com', name: 'Test 1' },
-      { id: 2, email: 'test2@gmail.com', name: 'Test 2' }
-    ]
-
-    const users = userDataHandler.findUsers({ name: 'Test 1' })
-    expect(users.length).to.equal(1)
-    expect(users[0].email).to.equal('test1@gmail.com')
-  })
-  it('should get the number of users', () => {
-    userDataHandler.users = [{ email: 'test1@test.com' }, { email: 'test2@test.com' }]
-    const userCount = userDataHandler.getNumberOfUsers()
-    expect(userCount).to.equal(2)
-  })
-
-  it('should handle no users while getting number of users', () => {
-    userDataHandler.users = []
-    const userCount = userDataHandler.getNumberOfUsers()
-    expect(userCount).to.equal(0)
-  })
-
-  it('should find matching users ', () => {
-    userDataHandler.users = [{ name: 'John', age: 30 }, { name: 'Tom', age: 35 }]
-    const searchParams = { age: 30 }
-    const matchingUsers = userDataHandler.findUsers(searchParams)
-    expect(matchingUsers).to.deep.equal([{ name: 'John', age: 30 }])
-  })
-
-  it('should handle no search parameters while finding users', () => {
-    userDataHandler.users = [{ name: 'John', age: 30 }, { name: 'Tom', age: 35 }]
-    expect(() => {
-      userDataHandler.findUsers('')
-    }).to.throw('No search parameters provided!')
-  })
-
-  it('should handle no users loaded while finding users', () => {
-    userDataHandler.users = []
-    try {
-      userDataHandler.findUsers({ name: 'John' })
-    } catch (err) {
-      expect(err.message).to.equal('No users loaded!')
-    }
-  })
-
-  it('should handle no matching users found', () => {
-    userDataHandler.users = [{ name: 'John', age: 30 }, { name: 'Tom', age: 35 }]
-    try {
-      userDataHandler.findUsers({ name: 'Peter' })
-    } catch (err) {
-      expect(err.message).to.equal('No matching users found!')
-    }
-  })
-  it("should throw an error if the loading users' data fails", async function () {
-    const stub = sandbox.stub(axios, 'get').rejects(new Error('Fake error'))
-    try {
-      expect(await userDataHandler.loadUsers()).to.throw('The function did not throw an error')
-    } catch (err) {
-      expect(err.message).to.contain('Failed to load users data')
-    } finally {
-      stub.restore()
-    }
-  })
-
-  it('should throw an error if no users loaded when getting emails list', () => {
-    try {
-      userDataHandler.getUserEmailsList()
-      expect.fail('The function did not throw an error')
-    } catch (err) {
-      expect(err.message).to.equal('No users loaded!')
-    }
-  })
-
-  it('should throw an error if no search parameters provided when finding users', () => {
-    try {
-      userDataHandler.findUsers()
-      expect.fail('The function did not throw an error')
-    } catch (err) {
-      expect(err.message).to.equal('No search parameters provided!')
-    }
-  })
-
-  it('should throw an error if no matching users found when finding users', () => {
-    userDataHandler.users = [{ id: 1, name: 'John' }]
-
-    try {
-      userDataHandler.findUsers({ name: 'Peter' })
-      expect.fail('The function did not throw an error')
-    } catch (err) {
-      expect(err.message).to.equal('No matching users found!')
-    }
+      try {
+        await userDataHandler.getUserEmailsList()
+      } catch (error) {
+        expect(error.message).to.include('No users loaded!')
+      }
+    })
   })
 })

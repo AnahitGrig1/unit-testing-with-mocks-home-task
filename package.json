@@ -4,7 +4,9 @@
   "description": "a project used for the unit testing with NodeJS home task",
   "main": "index.js",
   "nyc": {
-    "include": ["src/data_handlers/user_data_handler.js"]
+    "include": [
+      "src/data_handlers/user_data_handler.js"
+    ]
   },
   "scripts": {
     "test": "npm test",
@@ -33,6 +35,7 @@
     "axios": "^0.19.2",
     "chai": "^4.4.1",
     "express": "^4.17.1",
+    "fs": "^0.0.1-security",
     "jest": "^29.7.0",
     "mocha": "^10.4.0",
     "sinon": "^17.0.1"

@@ -5,7 +5,7 @@ const app = express()
 const port = process.env.SERVER_PORT || 3000
 
 const pathToUsersJson = path.join(__dirname, '..', '..', 'data', 'users.json')
-const users = JSON.parse(fs.readFileSync(pathToUsersJson))
+const users = JSON.parse(fs.readFileSync(pathToUsersJson, { encoding: 'utf8' }))
 
 app.get('/users', function (req, res) {
   res.send(users)
